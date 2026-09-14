@@ -1,69 +1,48 @@
-import Image from "next/image";
+"use client";
+
+import { FormEvent, useMemo, useState } from "react";
+import { categories, menuItems } from "@/data/menu";
+import { CakeSize, CartLine, Food } from "@/types/menu";
+
+const birr = (price: number) => `ETB ${price.toLocaleString()}`;
+const translations = { en: { welcome: "Order your favorite pastry.", search: "Search here...", menu: "Menu", cart: "Your order", feedback: "Guest notes" }, am: { welcome: "የሚወዱትን ፓስትሪ ይዘዙ።", search: "ምግብ ይፈልጉ...", menu: "ምናሌ", cart: "የእርስዎ ትዕዛዝ", feedback: "የደንበኞች አስተያየት" } };
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+  const [language, setLanguage] = useState<"en" | "am">("en");
+  const [category, setCategory] = useState("All"); const [query, setQuery] = useState("");
+  const [cart, setCart] = useState<CartLine[]>([]); const [selected, setSelected] = useState<Food | null>(null); const [cartOpen, setCartOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false); const [loginOpen, setLoginOpen] = useState(false); const [items, setItems] = useState(menuItems);
+  const [feedback, setFeedback] = useState([{ name: "Mekdes A.", rating: 5, text: "The coffee and chocolate cake were wonderful.", date: "Today" }, { name: "Anonymous", rating: 5, text: "Warm service, fresh pastries.", date: "Yesterday" }]);
+  const t = translations[language];
+  const visibleItems = useMemo(() => items.filter(i => i.isVisible && (category === "All" || i.category === category) && `${i.name} ${i.nameAm} ${i.description}`.toLowerCase().includes(query.toLowerCase())), [items, category, query]);
+  const count = cart.reduce((sum, line) => sum + line.quantity, 0); const total = cart.reduce((sum, line) => sum + (line.size?.price ?? line.food.price) * line.quantity, 0);
+  function add(food: Food, size = food.sizes?.find(s => s.name === "1 KG") ?? food.sizes?.[0]) { if (food.isSoldOut) return; setCart(prev => { const hit = prev.find(x => x.food.id === food.id && x.size?.name === size?.name); return hit ? prev.map(x => x === hit ? { ...x, quantity: x.quantity + 1 } : x) : [...prev, { food, size, quantity: 1 }]; }); setSelected(null); }
+  function quantity(index: number, change: number) { setCart(prev => prev.flatMap((line, i) => i !== index ? [line] : line.quantity + change < 1 ? [] : [{ ...line, quantity: line.quantity + change }])); }
+  return <main className="app">
+    <header className="topbar"><button className="brand" onClick={() => { setCategory("All"); setQuery(""); }} aria-label="Hasset Pastry home"><span className="brand-mark">H</span><span><b>HASSET</b><i>pastry</i></span></button><div className="header-actions"><button className="icon-btn" onClick={() => setLanguage(language === "en" ? "am" : "en")} aria-label="Change language">{language === "en" ? "አማ" : "EN"}</button></div></header>
+    <section className="hero"><div><p className="eyebrow">ADDIS ABABA · MADE DAILY</p><h1>A little moment<br /><span>of sweetness.</span></h1><p>{t.welcome}</p><button className="hero-link" onClick={() => document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" })}>Explore the menu <span>↓</span></button></div><div className="hero-art"><img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=85" alt="Chocolate cake" /><div className="stamp">BAKED<br />WITH LOVE</div></div></section>
+    <section id="menu" className="menu-section"><div className="section-heading"><div><p className="eyebrow">FRESH FROM OUR KITCHEN</p><h2>{t.menu}</h2></div></div><label className="search"><span>⌕</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder={t.search} /><kbd>⌘ K</kbd></label><nav className="categories" aria-label="Food categories">{categories.map(cat => <button key={cat} className={category === cat ? "active" : ""} onClick={() => setCategory(cat)}>{cat}</button>)}</nav>
+      {visibleItems.length ? <div className="food-grid">{visibleItems.map(food => <FoodCard key={food.id} food={food} language={language} onOpen={() => setSelected(food)} onAdd={() => add(food)} />)}</div> : <div className="empty">No pastries found. Try another search.</div>}
+    </section>
+    <section className="story"><div className="story-photo"><img src="https://images.unsplash.com/photo-1559620192-032c4bc4674e?auto=format&fit=crop&w=1000&q=85" alt="Fresh pastry making" /></div><div><p className="eyebrow">OUR LITTLE PROMISE</p><h2>Made for unhurried mornings and sweet endings.</h2><p>At Hasset, every cake and pastry is made with care, good ingredients, and a little Ethiopian warmth.</p><div className="story-points"><span>✦ Baked daily</span><span>✦ Quality ingredients</span><span>✦ Made with heart</span></div></div></section>
+    <Feedback feedback={feedback} onSubmit={(event) => { event.preventDefault(); const fd = new FormData(event.currentTarget); setFeedback([{ name: (fd.get("name") as string) || "Anonymous", rating: Number(fd.get("rating")), text: fd.get("text") as string, date: "Just now" }, ...feedback]); event.currentTarget.reset(); }} />
+    <footer><div className="brand footer-brand"><span className="brand-mark">H</span><span><b>HASSET</b><i>pastry</i></span></div><p>Made fresh for you · Addis Ababa</p></footer>
+    <nav className="bottom-nav" aria-label="Quick actions"><button className="nav-current" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}><span className="nav-icon" aria-hidden="true">⌂</span><b>Home</b></button><button onClick={() => setCartOpen(true)}><span className="nav-icon cart-count" aria-hidden="true">▱<i>{count}</i></span><b>Cart</b></button><button onClick={() => setLoginOpen(true)}><span className="nav-icon" aria-hidden="true">♙</span><b>Staff login</b></button></nav>
+    {selected && <FoodModal food={selected} language={language} onClose={() => setSelected(null)} onAdd={add} />}
+    {cartOpen && <Cart cart={cart} total={total} onClose={() => setCartOpen(false)} onChange={quantity} onClear={() => setCart([])} />}
+    {loginOpen && <StaffLogin onClose={() => setLoginOpen(false)} onLogin={() => { setLoginOpen(false); setAdminOpen(true); }} />}
+    {adminOpen && <Admin items={items} onClose={() => setAdminOpen(false)} onToggle={(id, field) => setItems(items.map(item => item.id === id ? { ...item, [field]: !item[field] } : item))} />}
+  </main>;
 }
+
+function FoodCard({ food, language, onOpen, onAdd }: { food: Food; language: "en" | "am"; onOpen: () => void; onAdd: () => void }) { return <article className="food-card"><button className="card-image" onClick={onOpen}><img src={food.image} alt={food.name} />{food.isSoldOut && <span className="sold">Sold out</span>}{food.featured && !food.isSoldOut && <span className="featured">Baker’s pick</span>}</button><div className="card-body"><button className="food-name" onClick={onOpen}><h3>{language === "am" ? food.nameAm : food.name}</h3><p>{language === "am" ? food.descriptionAm : food.description}</p></button><div className="card-bottom"><strong>{birr(food.price)}{food.sizes && <small> from</small>}</strong><button className="add" onClick={onAdd} disabled={food.isSoldOut} aria-label={`Add ${food.name}`}>{food.isSoldOut ? "—" : "+"}</button></div></div></article>; }
+
+function FoodModal({ food, language, onClose, onAdd }: { food: Food; language: "en" | "am"; onClose: () => void; onAdd: (food: Food, size?: CakeSize) => void }) { const [size, setSize] = useState(food.sizes?.find(s => s.name === "1 KG") ?? food.sizes?.[0]); const [qty, setQty] = useState(1); const price = size?.price ?? food.price; return <div className="overlay" role="dialog" aria-modal="true" aria-label={food.name}><div className="food-modal"><button className="close" onClick={onClose}>×</button><img className="modal-image" src={food.image} alt={food.name} /><div className="modal-info"><p className="eyebrow">{food.category}</p><h2>{language === "am" ? food.nameAm : food.name}</h2><p>{language === "am" ? food.descriptionAm : food.description}</p><div className="ingredients"><b>{language === "am" ? "የተሰራባቸው" : "Ingredients"}</b><span>{(language === "am" ? food.ingredientsAm : food.ingredients).join(" · ")}</span></div>{food.sizes && <div className="sizes"><b>Choose size</b><div>{food.sizes.map(s => <button key={s.name} onClick={() => setSize(s)} className={size?.name === s.name ? "selected" : ""}>{s.name}<small>{birr(s.price)}</small></button>)}</div></div>}<div className="buy-row"><div className="stepper"><button onClick={() => setQty(Math.max(1, qty - 1))}>−</button><b>{qty}</b><button onClick={() => setQty(qty + 1)}>+</button></div><button className="primary" disabled={food.isSoldOut} onClick={() => { for (let i = 0; i < qty; i++) onAdd(food, size); }}>{food.isSoldOut ? "Sold out" : `Add to cart · ${birr(price * qty)}`}</button></div></div></div></div>; }
+
+function Cart({ cart, total, onClose, onChange, onClear }: { cart: CartLine[]; total: number; onClose: () => void; onChange: (i: number, change: number) => void; onClear: () => void }) { return <div className="overlay cart-overlay"><aside className="cart" aria-label="Shopping cart"><div className="cart-head"><div><p className="eyebrow">YOUR SELECTION</p><h2>Your cart</h2></div><button className="close" onClick={onClose}>×</button></div>{cart.length ? <><div className="cart-lines">{cart.map((line, i) => <div className="cart-line" key={`${line.food.id}-${line.size?.name}`}><img src={line.food.image} alt="" /><div><b>{line.food.name}</b><small>{line.size?.name ?? line.food.category}</small><strong>{birr((line.size?.price ?? line.food.price) * line.quantity)}</strong></div><div className="mini-stepper"><button onClick={() => onChange(i, -1)}>−</button><span>{line.quantity}</span><button onClick={() => onChange(i, 1)}>+</button></div></div>)}</div><button className="clear" onClick={onClear}>Clear cart</button><div className="cart-total"><span>Total</span><b>{birr(total)}</b></div><p className="cart-reminder">Use this cart as a helpful reminder when you place your order with the waiter.</p><button className="primary full" onClick={onClose}>Continue browsing</button></> : <div className="empty"><span>☕</span><h3>Your cart is waiting</h3><p>Add something sweet to get started.</p></div>}</aside></div>; }
+
+function Feedback({ feedback, onSubmit }: { feedback: { name: string; rating: number; text: string; date: string }[]; onSubmit: (e: FormEvent<HTMLFormElement>) => void }) { return <section className="feedback"><div><p className="eyebrow">FROM OUR GUESTS</p><h2>Kind words,<br />sweet moments.</h2><div className="reviews">{feedback.slice(0, 2).map((f, i) => <article key={i}><div className="stars">{"★".repeat(f.rating)}</div><p>“{f.text}”</p><small>{f.name} · {f.date}</small></article>)}</div></div><form onSubmit={onSubmit}><p className="eyebrow">SHARE YOUR EXPERIENCE</p><h3>How was your visit?</h3><div className="rating">{[5,4,3,2,1].map(n => <label key={n}><input required type="radio" name="rating" value={n} defaultChecked={n === 5} /><span>★</span></label>)}</div><input name="name" placeholder="Your name (optional)" /><textarea required name="text" placeholder="Your feedback..." rows={3} /><button className="primary">Submit feedback <span>→</span></button></form></section>; }
+
+function StaffLogin({ onClose, onLogin }: { onClose: () => void; onLogin: () => void }) { return <div className="overlay"><section className="staff-login"><button className="close" onClick={onClose}>×</button><div className="login-art"><img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=900&q=85" alt="Hasset pastry" /></div><form onSubmit={(e) => { e.preventDefault(); onLogin(); }}><div className="brand login-brand"><span className="brand-mark">H</span><span><b>HASSET</b><i>pastry</i></span></div><h2>Staff login</h2><p>Sign in to manage your menu and orders.</p><label>Email address<input required type="email" placeholder="name@hassetpastry.com" /></label><label>Password<input required type="password" placeholder="••••••••" /></label><button className="primary full">Sign in</button><button type="button" className="back-menu" onClick={onClose}>← Back to menu</button></form></section></div>; }
+
+function Admin({ items, onClose, onToggle }: { items: Food[]; onClose: () => void; onToggle: (id: string, field: "isVisible" | "isSoldOut") => void }) { const [tab, setTab] = useState("Dashboard"); const [editing, setEditing] = useState<string | null>(null); return <div className="overlay admin-overlay"><section className="admin"><aside><div className="brand"><span className="brand-mark">H</span><span><b>HASSET</b><i>admin</i></span></div>{["Dashboard", "Menu", "Settings"].map(n => <button className={tab === n ? "nav-active" : ""} key={n} onClick={() => setTab(n)}>{n}</button>)}<button className="logout" onClick={onClose}>← Exit portal</button></aside><main><div className="admin-head"><div><p className="eyebrow">GOOD MORNING, ADMIN</p><h2>{tab}</h2></div><button className="close" onClick={onClose}>×</button></div>{tab === "Dashboard" ? <div className="stats"><article><small>Menu items</small><b>{items.filter(i => i.isVisible).length}</b><span>Currently displayed</span></article><article><small>Sold out</small><b>{items.filter(i => i.isSoldOut).length}</b><span>Needs attention</span></article><article><small>Categories</small><b>10</b><span>Across the menu</span></article></div> : tab === "Menu" ? <><div className="admin-toolbar"><input placeholder="Search menu items" /><button className="primary">+ Add food</button></div><div className="table-wrap"><table><thead><tr><th>Food</th><th>Category</th><th>Price</th><th>Availability</th><th>Edit</th></tr></thead><tbody>{items.map(item => <tr key={item.id}><td><img src={item.image} alt="" /> <b>{item.name}</b></td><td>{item.category}</td><td>{birr(item.price)}</td><td><button className={item.isSoldOut ? "toggle off" : "toggle on"} onClick={() => onToggle(item.id, "isSoldOut")} aria-label={`Mark ${item.name} ${item.isSoldOut ? "available" : "sold out"}`}><i /></button><span className="availability-label">{item.isSoldOut ? "Sold out" : "Available"}</span></td><td><button className="edit-icon" onClick={() => setEditing(editing === item.id ? null : item.id)} aria-label={`Edit ${item.name}`}>✎</button>{editing === item.id && <div className="inline-edit"><b>Edit food</b><input defaultValue={item.name} /><input defaultValue={item.price} type="number" /><button className="primary" onClick={() => setEditing(null)}>Save</button></div>}</td></tr>)}</tbody></table></div></> : <section className="settings"><div className="profile-row"><div className="profile-photo">HA<button aria-label="Change profile picture">✎</button></div><div><h3>Hasset Admin</h3><p>Manager · Hasset Pastry</p></div></div><form onSubmit={(e) => e.preventDefault()}><h3>Profile details</h3><div className="setting-grid"><label>Full name<input defaultValue="Hasset Admin" /></label><label>Email address<input defaultValue="admin@hassetpastry.com" type="email" /></label><label>Phone number<input defaultValue="+251 91 000 0000" /></label><label>Role<input defaultValue="Manager" /></label></div><h3>Store preferences</h3><div className="setting-grid"><label>Business name<input defaultValue="Hasset Pastry" /></label><label>Location<input defaultValue="Addis Ababa, Ethiopia" /></label></div><button className="primary">Save changes</button></form></section>}</main></section></div>; }
