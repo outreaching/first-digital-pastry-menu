@@ -18,5 +18,3 @@ export type Food = {
   isSoldOut: boolean;
   featured?: boolean;
 };
-
-export type CartLine = { food: Food; size?: CakeSize; quantity: number };
